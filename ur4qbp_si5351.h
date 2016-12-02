@@ -153,12 +153,13 @@ else {
 }
 
 
+
 	divider = 900000000uL / frequency;// Calculate the division ratio. 900,000,000 is the maximum internal, PLL frequency: 900MHz
 	if (divider % 2)
 		divider -= 1;		// Ensure an even integer division ratio
 
 	pllFreq = divider * frequency;	// Calculate the pllFrequency: the divider * desired output frequency
-
+if (frequency > 150000000){divider = 4; pllFreq = 4 * frequency;}
 	denom = 0x000FFFFF;				// For simplicity we set the denominator to the maximum 0x000FFFFF
 	mult = pllFreq / xtalFreq;		// Determine the multiplier to get to the required pllFrequency
 	l = pllFreq % xtalFreq;			// It has three parts:
@@ -193,6 +194,14 @@ static void si5351aSetFrequencyA(uint32_t frequency)
 {
 	static uint8_t skipreset;
 	static uint8_t oldmult;
+
+	if (0 == frequency)
+	{
+		si535x_SendRegister(SI5351a_CLK0_CONTROL, 0x80 | 0x5F | SI5351a_CLK_SRC_PLL_A);
+
+		skipreset = 0;	// запрос на переинициализацию выхода
+		return;
+	}
 
 	const uint8_t mult = si5351aSetFrequencyX(0, frequency);
 //si535x_setupMultisynth(multisynchbase [2], 4, 0);
@@ -254,7 +263,7 @@ static void si5351aSetFrequencyC(uint32_t frequency)
 
 	if (0 == frequency)
 	{
-		si535x_SendRegister(SI5351a_CLK2_CONTROL, 0x80 | 0x5F | SI5351a_CLK_SRC_PLL_A);
+		si535x_SendRegister(SI5351a_CLK2_CONTROL, 0x80 | 0x5F | SI5351a_CLK_SRC_PLL_A); //INV 180 deg
 
 		skipreset = 0;	// запрос на переинициализацию выхода
 		return;
@@ -267,7 +276,7 @@ static void si5351aSetFrequencyC(uint32_t frequency)
 	// the parameters, you don't need to reset the PLL, and there is no glitch
 	if (skipreset == 0 || mult != oldmult)
 	{
-		si535x_SendRegister(SI5351a_PLL_RESET, 0x80);	// PLL B reset
+		si535x_SendRegister(SI5351a_PLL_RESET, 0x20);	// PLL A reset
 		// Finally switch on the CLK1 output (0x4F)
 		// and set the MultiSynth0 input to be PLL B
 		si535x_SendRegister(SI5351a_CLK2_CONTROL, 0x5F | SI5351a_CLK_SRC_PLL_A);
@@ -282,7 +291,7 @@ static void si5351aSetFrequencyC(uint32_t frequency)
 static void si5351_Init(void)
 {
 	Wire.begin();
-	Wire.setClock(400000L);
+	Wire.setClock(100000L);
 	si535x_SendRegister(SI5351a_FANOUT, 0xC0);
 	si535x_SendRegister(SI5351a_PLL_LOADCAP, 0xC0 | 0x12);
 	si535x_SendRegister(SI5351a_PLL_RESET, 0x20);	// PLL A reset
@@ -291,7 +300,8 @@ static void si5351_Init(void)
 	si535x_SendRegister(SI5351a_CLK0_CONTROL, 0x4F | SI5351a_CLK_SRC_PLL_A);
 
 
-	si535x_SendRegister(SI5351a_CLK2_CONTROL, 0x5F | SI5351a_CLK_SRC_PLL_A);
+	si535x_SendRegister(SI5351a_CLK2_CONTROL, 0x5F | SI5351a_CLK_SRC_PLL_A); // INV180deg
+
 
 	si535x_SendRegister(SI5351a_PLL_RESET, 0x80);	// PLL B reset
 	// Finally switch on the CLK1 output (0x4F)
