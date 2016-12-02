@@ -139,7 +139,7 @@ static uint8_t si5351aSetFrequencyX(uint8_t clkout, uint32_t frequency)
 	uint32_t divider;
 	uint32_t r_div;
 
-
+if (frequency > 222000000) {frequency = 222000000;}//работает до 222MHz
 //Set R-divider
 if (frequency > 1000000){r_div = SI5351a_R_DIV_1;}
 else {
@@ -291,7 +291,7 @@ static void si5351aSetFrequencyC(uint32_t frequency)
 static void si5351_Init(void)
 {
 	Wire.begin();
-	Wire.setClock(100000L);
+	Wire.setClock(400000L);
 	si535x_SendRegister(SI5351a_FANOUT, 0xC0);
 	si535x_SendRegister(SI5351a_PLL_LOADCAP, 0xC0 | 0x12);
 	si535x_SendRegister(SI5351a_PLL_RESET, 0x20);	// PLL A reset
